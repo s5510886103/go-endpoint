@@ -1,5 +1,5 @@
 ---
-version: "3.7"
+version: "3.8"
 services:
   app:
     build: .
@@ -10,3 +10,4 @@ services:
       - ./:/app
     environment:
       PORT: "5555"
+    command: "air -c .air.toml"
