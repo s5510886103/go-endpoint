@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
+	_ "github.com/hlkittipan/go-endpoint/docs"
+	"github.com/hlkittipan/go-endpoint/src/controller"
+	"github.com/hlkittipan/go-endpoint/src/middleware"
+	"github.com/hlkittipan/go-endpoint/src/service"
+	"github.com/swaggo/files"                  // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
@@ -33,15 +37,19 @@ func main() {
 	fmt.Println("Hello world")
 	fmt.Println("KS.")
 	r := setupRouter()
-	err := r.Run(":4000")
+	err := r.Run(":5555")
 	if err != nil {
 		fmt.Println("Error starter")
 		return
-	} // listen and serve on 0.0.0.0:4000 (for windows "localhost:4000")
+	} // listen and serve on 0.0.0.0:5555 (for windows "localhost:5555")
 
 }
 
 func setupRouter() *gin.Engine {
+	var loginService = service.StaticLoginService()
+	var jwtService = service.JWTAuthService()
+	var loginController = controller.LoginHandler(loginService, jwtService)
+
 	r := gin.Default()
 
 	err := r.SetTrustedProxies(nil)
@@ -50,16 +58,37 @@ func setupRouter() *gin.Engine {
 	}
 	//r.SetTrustedProxies([]string{"IP SERVER"})
 
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+
+	r.POST("/login", func(ctx *gin.Context) {
+		token := loginController.Login(ctx)
+		if token != "" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"token": token,
+			})
+		} else {
+			ctx.JSON(http.StatusUnauthorized, nil)
+		}
+	})
+
 	h := CustomerHandler{}
 	h.Initialize()
 
-	r.GET("/customers", h.GetAllCustomer)
-	r.GET("/customers/:id", h.GetCustomer)
-	r.POST("/customers", h.SaveCustomer)
-	r.PUT("/customers/:id", h.UpdateCustomer)
-	r.DELETE("/customers/:id", h.DeleteCustomer)
+	v1 := r.Group("/v1")
+	v1.Use(middleware.AuthorizeJWT())
+	{
+		v1.GET("/customers", h.GetAllCustomer)
+		v1.GET("/customers/:id", h.GetCustomer)
+		v1.POST("/customers", h.SaveCustomer)
+		v1.PUT("/customers/:id", h.UpdateCustomer)
+		v1.DELETE("/customers/:id", h.DeleteCustomer)
+	}
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return r
 }

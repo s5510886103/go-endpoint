@@ -1,0 +1,12 @@
+---
+version: "3.7"
+services:
+  app:
+    build: .
+    image: go-endpoint:dev
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./:/app
+    environment:
+      PORT: "5555"
