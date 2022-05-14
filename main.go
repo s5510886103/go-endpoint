@@ -3,15 +3,17 @@ package main
 import (
 	"fmt"
 	_ "github.com/hlkittipan/go-endpoint/docs"
+	"github.com/hlkittipan/go-endpoint/src/config"
 	"github.com/hlkittipan/go-endpoint/src/controller"
 	"github.com/hlkittipan/go-endpoint/src/middleware"
 	"github.com/hlkittipan/go-endpoint/src/service"
+	"github.com/joho/godotenv"
 	"github.com/swaggo/files"                  // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"os"
 )
 
 import "github.com/gin-gonic/gin"
@@ -36,6 +38,8 @@ import "github.com/gin-gonic/gin"
 func main() {
 	fmt.Println("Hello world")
 	fmt.Println("KS.")
+	//run database
+	config.ConnectDB()
 	r := setupRouter()
 	err := r.Run(":5555")
 	if err != nil {
@@ -43,6 +47,20 @@ func main() {
 		return
 	} // listen and serve on 0.0.0.0:5555 (for windows "localhost:5555")
 
+}
+
+// use godot package to load/read the .env file and
+// return the value of the key
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
 
 func setupRouter() *gin.Engine {
@@ -88,6 +106,12 @@ func setupRouter() *gin.Engine {
 		v1.DELETE("/customers/:id", h.DeleteCustomer)
 	}
 
+	r.GET("/users", controller.GetAllUsers())           //add this
+	r.POST("/user", controller.CreateUser())            //add this
+	r.GET("/user/:userId", controller.GetAUser())       //add this
+	r.PUT("/user/:userId", controller.EditAUser())      //add this
+	r.DELETE("/user/:userId", controller.DeleteAUser()) //add this
+
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return r
@@ -106,18 +130,24 @@ type Customer struct {
 }
 
 func (h *CustomerHandler) Initialize() {
-	dsn := "root:blockee-dev@tcp(127.0.0.1:3306)/golang?charset=utf8&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = db.AutoMigrate(&Customer{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	h.DB = db
+	//dbUsername := goDotEnvVariable("MYSQL_USERNAME")
+	//dbPassword := goDotEnvVariable("MYSQL_PASSWORD")
+	//dbName := goDotEnvVariable("MYSQL_DB_NAME")
+	//dbHost := goDotEnvVariable("MYSQL_HOST")
+	//dbPort := goDotEnvVariable("MYSQL_PORT")
+	//dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", dbUsername, dbPassword, dbHost, dbPort, dbName)
+	//fmt.Println(dsn)
+	//db, err := gorm.Open(mysql.Open("root:1234567890@tcp(127.0.0.1:3306)/golang?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//err = db.AutoMigrate(&Customer{})
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//h.DB = db
 }
 
 // GetAllCustomer godoc
