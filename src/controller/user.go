@@ -14,9 +14,9 @@ import (
 )
 
 var userCollection *mongo.Collection = config.GetCollection(config.DB, "users")
-var validate = validator.New()
 
 func CreateUser() gin.HandlerFunc {
+	var validate = validator.New()
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		var user model.User
@@ -71,6 +71,7 @@ func GetAUser() gin.HandlerFunc {
 }
 
 func EditAUser() gin.HandlerFunc {
+	var validate = validator.New()
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		userId := c.Param("userId")
