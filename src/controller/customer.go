@@ -72,6 +72,21 @@ func GetACustomer() gin.HandlerFunc {
 	}
 }
 
+// EditACustomer godoc
+// @summary Update Customer
+// @description Update customer by id
+// @tags customers
+// @security ApiKeyAuth
+// @id UpdateCustomer
+// @accept json
+// @produce json
+// @param id path int true "id of customer to be updated"
+// @param Customer body model.CustomerForUpdate true "Customer data to be updated"
+// @response 200 {object} model.Response "OK"
+// @response 400 {object} model.Response "Bad Request"
+// @response 401 {object} model.Response "Unauthorized"
+// @response 500 {object} model.Response "Internal Server Error"
+// @Router /customers/:id [put]
 func EditACustomer() gin.HandlerFunc {
 	var validate = validator.New()
 	return func(c *gin.Context) {
@@ -141,6 +156,18 @@ func DeleteACustomer() gin.HandlerFunc {
 	}
 }
 
+// GetAllCustomers godoc
+// @summary Get customer list
+// @description Get all customer
+// @tags customers
+// @id CustomerHandler
+// @accept json
+// @produce json
+// @response 200 {object} model.Response "OK"
+// @response 400 {object} model.Response "Bad Request"
+// @response 401 {object} model.Response "Unauthorized"
+// @response 500 {object} model.Response "Internal Server Error"
+// @router /customers [get]
 func GetAllCustomers() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
