@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/hlkittipan/go-endpoint/src/config"
@@ -9,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -34,11 +37,16 @@ func CreateUser() gin.HandlerFunc {
 			return
 		}
 
+		password := HashPassword(*user.Password)
+		user.Password = &password
+
 		newUser := model.User{
-			Id:       primitive.NewObjectID(),
-			Name:     user.Name,
-			Location: user.Location,
-			Title:    user.Title,
+			Id:        primitive.NewObjectID(),
+			Name:      user.Name,
+			Email:     user.Email,
+			Password:  user.Password,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
 		result, err := userCollection.InsertOne(ctx, newUser)
@@ -91,7 +99,7 @@ func EditAUser() gin.HandlerFunc {
 			return
 		}
 
-		update := bson.M{"name": user.Name, "location": user.Location, "title": user.Title}
+		update := bson.M{"name": user.Name, "email": user.Email, "password": user.Password}
 		result, err := userCollection.UpdateOne(ctx, bson.M{"id": objId}, bson.M{"$set": update})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, model.UserResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
@@ -173,4 +181,28 @@ func GetAllUsers() gin.HandlerFunc {
 			model.UserResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": users}},
 		)
 	}
+}
+
+//HashPassword is used to encrypt the password before it is stored in the DB
+func HashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return string(bytes)
+}
+
+//VerifyPassword checks the input password while verifying it with the passward in the DB.
+func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
+	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
+	check := true
+	msg := ""
+
+	if err != nil {
+		msg = fmt.Sprintf("login or passowrd is incorrect")
+		check = false
+	}
+
+	return check, msg
 }

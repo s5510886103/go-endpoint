@@ -1,6 +1,9 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+)
 
 type UserResponse struct {
 	Status  int                    `json:"status"`
@@ -9,8 +12,13 @@ type UserResponse struct {
 }
 
 type User struct {
-	Id       primitive.ObjectID `json:"id,omitempty"`
-	Name     string             `json:"name,omitempty" validate:"required"`
-	Location string             `json:"location,omitempty" validate:"required"`
-	Title    string             `json:"title,omitempty" validate:"required"`
+	Id           primitive.ObjectID `json:"id,omitempty"`
+	Name         *string            `json:"name" validate:"required,min=2,max=200"`
+	Email        *string            `json:"email" validate:"email,required"`
+	Password     *string            `json:"Password" validate:"required,min=6"`
+	Token        *string            `json:"token"`
+	RefreshToken *string            `json:"refresh_token"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+	UserId       string             `json:"user_id"`
 }
