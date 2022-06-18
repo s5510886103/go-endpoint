@@ -22,24 +22,23 @@ var userCollection *mongo.Collection = config.GetCollection(config.DB, "users")
 
 func StaticLoginService() LoginService {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	var user model.User
 	var foundUser model.User
 
-	err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
+	err := userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
 	defer cancel()
 	if err != nil {
 		return nil
 	}
 
-	passwordIsValid, msg := controller.VerifyPassword(*user.Password, *foundUser.Password)
+	passwordIsValid, _ := controller.VerifyPassword(*foundUser.Password, *foundUser.Password)
 	defer cancel()
 	if passwordIsValid != true {
 		return nil
 	}
 
 	return &loginInformation{
-		email:    "bikash.dulal@wesionary.team",
-		password: "testing",
+		email:    *foundUser.Email,
+		password: *foundUser.Password,
 	}
 }
 func (info *loginInformation) LoginUser(email string, password string) bool {
