@@ -310,9 +310,8 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
-			"token":         foundUser.Token,
-			"refresh_token": foundUser.RefreshToken},
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
 			"user":    foundUser,
 			"message": "return successfully"})
 
