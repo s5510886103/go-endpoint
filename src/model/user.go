@@ -15,7 +15,7 @@ type User struct {
 	Id           primitive.ObjectID `json:"id,omitempty"`
 	Name         *string            `json:"name" validate:"required,min=2,max=200"`
 	Email        *string            `json:"email" validate:"email,required"`
-	Password     *string            `json:"Password" validate:"required,min=6"`
+	Password     *string            `json:"password" validate:"required,min=6"`
 	Token        *string            `json:"token"`
 	RefreshToken *string            `json:"refresh_token"`
 	CreatedAt    time.Time          `json:"created_at"`

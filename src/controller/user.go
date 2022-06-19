@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/hlkittipan/go-endpoint/src/config"
+	"github.com/hlkittipan/go-endpoint/src/helper"
 	"github.com/hlkittipan/go-endpoint/src/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -183,7 +184,9 @@ func GetAllUsers() gin.HandlerFunc {
 	}
 }
 
-//HashPassword is used to encrypt the password before it is stored in the DB
+var validate = validator.New()
+
+//HashPassword is used to encrypt the password
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
@@ -193,7 +196,7 @@ func HashPassword(password string) string {
 	return string(bytes)
 }
 
-//VerifyPassword checks the input password while verifying it with the passward in the DB.
+//VerifyPassword checks
 func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
 	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
 	check := true
@@ -205,4 +208,111 @@ func VerifyPassword(userPassword string, providedPassword string) (bool, string)
 	}
 
 	return check, msg
+}
+
+// SignUp sign up user
+func SignUp() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var user model.User
+
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		validationErr := validate.Struct(user)
+		if validationErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "data": nil, "message": validationErr.Error()})
+			return
+		}
+
+		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+		defer cancel()
+		if err != nil {
+			log.Panic(err)
+			c.JSON(http.StatusInternalServerError,
+				gin.H{"success": false, "data": nil, "message": "error occured while checking for the email"})
+
+			return
+		}
+
+		password := HashPassword(*user.Password)
+		user.Password = &password
+
+		if count > 0 {
+			c.JSON(http.StatusInternalServerError,
+				gin.H{"success": false, "data": nil, "message": "email ready exists"})
+
+			return
+		}
+
+		user.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+		token, refreshToken, _ := helper.GenerateAllTokens(*user.Email)
+		user.Token = &token
+		user.RefreshToken = &refreshToken
+
+		insertErr, _ := userCollection.InsertOne(ctx, user)
+		if insertErr != nil {
+			msg := fmt.Sprintf("User item was not created")
+			c.JSON(http.StatusInternalServerError,
+				gin.H{"success": false, "data": nil, "message": msg})
+
+			return
+		}
+		defer cancel()
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": nil, "message": "user signup sucess"})
+
+	}
+}
+
+//Login user
+func Login() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var user model.User
+		var foundUser model.User
+		fmt.Println(user.Email)
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or passowrd is incorrect"})
+			return
+		}
+
+		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
+		defer cancel()
+		if passwordIsValid != true {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			return
+		}
+
+		if foundUser.Email == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found"})
+			return
+		}
+		token, refreshToken, _ := helper.GenerateAllTokens(*foundUser.Email)
+
+		helper.UpdateAllTokens(token, refreshToken, *foundUser.Email)
+		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
+			"token":         foundUser.Token,
+			"refresh_token": foundUser.RefreshToken},
+			"message": "return successfully"})
+
+	}
 }

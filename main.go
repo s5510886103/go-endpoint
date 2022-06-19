@@ -6,12 +6,10 @@ import (
 	"github.com/hlkittipan/go-endpoint/src/config"
 	"github.com/hlkittipan/go-endpoint/src/controller"
 	"github.com/hlkittipan/go-endpoint/src/middleware"
-	"github.com/hlkittipan/go-endpoint/src/service"
 	"github.com/joho/godotenv"
 	"github.com/swaggo/files"                  // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"log"
-	"net/http"
 	"os"
 )
 
@@ -63,10 +61,6 @@ func goDotEnvVariable(key string) string {
 }
 
 func setupRouter() *gin.Engine {
-	var loginService = service.StaticLoginService()
-	var jwtService = service.JWTAuthService()
-	var loginController = controller.LoginHandler(loginService, jwtService)
-
 	r := gin.Default()
 
 	err := r.SetTrustedProxies(nil)
@@ -81,21 +75,11 @@ func setupRouter() *gin.Engine {
 		})
 	})
 
-	r.POST("/login", func(ctx *gin.Context) {
-		token := loginController.Login(ctx)
-		if token != "" {
-			ctx.JSON(http.StatusOK, gin.H{
-				"token": token,
-			})
-		} else {
-			ctx.JSON(http.StatusUnauthorized, nil)
-		}
-	})
+	r.POST("/login", controller.Login())
 
 	v1 := r.Group("/v1")
-	v1.Use(middleware.AuthorizeJWT())
+	v1.Use(middleware.Authentication())
 	{
-		v1.GET("/customers", controller.GetAllCustomers())
 		v1.GET("/customer/:id", controller.GetACustomer())
 		v1.POST("/customer", controller.CreateCustomer())
 		v1.PUT("/customer/:id", controller.EditACustomer())
@@ -103,6 +87,7 @@ func setupRouter() *gin.Engine {
 
 		v1.DELETE("/user/:userId", controller.DeleteAUser())
 	}
+	r.GET("/customers", controller.GetAllCustomers())
 
 	r.GET("/users", controller.GetAllUsers())
 	r.POST("/user", controller.CreateUser())       //add this

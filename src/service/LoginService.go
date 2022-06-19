@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/hlkittipan/go-endpoint/src/config"
-	"github.com/hlkittipan/go-endpoint/src/controller"
 	"github.com/hlkittipan/go-endpoint/src/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func StaticLoginService() LoginService {
 		return nil
 	}
 
-	passwordIsValid, _ := controller.VerifyPassword(*foundUser.Password, *foundUser.Password)
+	passwordIsValid, _ := VerifyPassword(*foundUser.Password, *foundUser.Password)
 	defer cancel()
 	if passwordIsValid != true {
 		return nil
@@ -41,6 +42,23 @@ func StaticLoginService() LoginService {
 		password: *foundUser.Password,
 	}
 }
+
+//VerifyPassword checks the input password while verifying it with the password in the DB.
+func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
+	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
+	check := true
+	msg := ""
+
+	if err != nil {
+		msg = fmt.Sprintf("login or passowrd is incorrect")
+		check = false
+	}
+
+	return check, msg
+}
+
 func (info *loginInformation) LoginUser(email string, password string) bool {
+	fmt.Println(info)
+	fmt.Println(password)
 	return info.email == email && info.password == password
 }
