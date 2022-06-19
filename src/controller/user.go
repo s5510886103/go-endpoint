@@ -275,12 +275,13 @@ func Login() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user model.User
 		var foundUser model.User
-		fmt.Println(user.Email)
+
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
+		fmt.Println(*user.Email)
+		fmt.Println(*user.Password)
 		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
 		defer cancel()
 		if err != nil {
@@ -312,6 +313,7 @@ func Login() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
 			"token":         foundUser.Token,
 			"refresh_token": foundUser.RefreshToken},
+			"user":    foundUser,
 			"message": "return successfully"})
 
 	}
