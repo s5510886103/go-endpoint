@@ -6,11 +6,12 @@ import (
 	"github.com/hlkittipan/go-endpoint/src/config"
 	"github.com/hlkittipan/go-endpoint/src/controller"
 	"github.com/hlkittipan/go-endpoint/src/middleware"
-	"github.com/joho/godotenv"
 	"github.com/swaggo/files"                  // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 import "github.com/gin-gonic/gin"
@@ -34,30 +35,32 @@ import "github.com/gin-gonic/gin"
 // @name Authorization
 func main() {
 	fmt.Println("Hello world")
-	fmt.Println("KS.")
+	log.Print("Starting the service...")
+
+	gin.SetMode(config.GoDotEnvVariable("GIN_MODE"))
 	//run database
 	config.ConnectDB()
 	r := setupRouter()
-	err := r.Run(":5555")
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	log.Print("The service is ready to listen and serve.")
+
+	err := r.Run(":" + config.GoDotEnvVariable("PORT"))
 	if err != nil {
 		fmt.Println("Error starter")
 		return
 	} // listen and serve on 0.0.0.0:5555 (for windows "localhost:5555")
-
-}
-
-// use godot package to load/read the .env file and
-// return the value of the key
-func goDotEnvVariable(key string) string {
-
-	// load .env file
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Fatalf("Error loading .env file")
+	killSignal := <-interrupt
+	switch killSignal {
+	case os.Interrupt:
+		log.Print("Got SIGINT...")
+	case syscall.SIGTERM:
+		log.Print("Got SIGTERM...")
 	}
 
-	return os.Getenv(key)
+	log.Print("The service is shutting down...")
+	log.Print("Done")
 }
 
 func setupRouter() *gin.Engine {
@@ -74,6 +77,13 @@ func setupRouter() *gin.Engine {
 			"message": "pong",
 		})
 	})
+
+	r.GET("/home", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Hello! Your request was processed.",
+		})
+	},
+	)
 
 	r.POST("/login", controller.Login())
 
@@ -95,6 +105,5 @@ func setupRouter() *gin.Engine {
 	r.PUT("/user/:userId", controller.EditAUser()) //add this
 
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	return r
 }

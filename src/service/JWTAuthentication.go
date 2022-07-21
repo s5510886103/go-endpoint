@@ -68,8 +68,7 @@ func (service *jwtServices) GenerateToken(email string, isUser bool) string {
 func (service *jwtServices) ValidateToken(encodedToken string) (*jwt.Token, error) {
 	return jwt.Parse(encodedToken, func(token *jwt.Token) (interface{}, error) {
 		if _, isValid := token.Method.(*jwt.SigningMethodHMAC); !isValid {
-			return nil, fmt.Errorf("invalid token", token.Header["alg"])
-
+			return nil, fmt.Errorf("invalid token: %s", token.Header["alg"])
 		}
 		return []byte(service.secretKey), nil
 	})
@@ -82,11 +81,11 @@ func UpdateTokens(signedToken string, signedRefreshToken string, email string) {
 
 	var updateObj primitive.D
 
-	updateObj = append(updateObj, bson.E{"token", signedToken})
-	updateObj = append(updateObj, bson.E{"refresh_token", signedRefreshToken})
+	updateObj = append(updateObj, bson.E{Key: "token", Value: signedToken})
+	updateObj = append(updateObj, bson.E{Key: "refresh_token", Value: signedRefreshToken})
 
-	Updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	updateObj = append(updateObj, bson.E{"updated_at", Updated_at})
+	UpdatedAt, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	updateObj = append(updateObj, bson.E{Key: "updated_at", Value: UpdatedAt})
 
 	upsert := true
 	filter := bson.M{"email": email}

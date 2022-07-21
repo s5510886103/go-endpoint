@@ -11,17 +11,22 @@ import (
 	"time"
 )
 
-func EnvMongoURI() string {
-	err := godotenv.Load()
-	if err != nil {
+func Init() {
+	errEnv := godotenv.Load()
+	if errEnv != nil {
 		log.Fatal("Error loading .env file")
 	}
+}
 
-	return os.Getenv("MONGOURI")
+// GoDotEnvVariable use godot package to load/read the .env file and
+// return the value of the key
+func GoDotEnvVariable(key string) string {
+	Init()
+	return os.Getenv(key)
 }
 
 func ConnectDB() *mongo.Client {
-	client, err := mongo.NewClient(options.Client().ApplyURI(EnvMongoURI()))
+	client, err := mongo.NewClient(options.Client().ApplyURI(GoDotEnvVariable("MONGOURI")))
 	if err != nil {
 		log.Fatal(err)
 	}

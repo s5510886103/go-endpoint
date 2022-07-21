@@ -1,13 +1,14 @@
 version: "3.8"
 services:
   app:
-    image: hlkittipan/go-endpoint:v1.0.10
-#    restart: on-failure
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dev
+    container_name: go-endpoint
     ports:
       - "5555:5555"
     volumes:
       - ./:/app
     environment:
       PORT: "5555"
-      GIN_MODE: "release"
-    command: "go run main.go"
+    command: "air -c .air.toml"
