@@ -2,7 +2,11 @@ version: "3.8"
 services:
   app:
     image: hlkittipan/go-endpoint:v1.0.16
-#    restart: on-failure
+    restart: on-failure
+#    build:
+#      context: .
+#      dockerfile: ./Dockerfile
+#    container_name: go-endpoint
     ports:
       - "5555:5555"
     volumes:
@@ -10,4 +14,4 @@ services:
     environment:
       PORT: "5555"
       GIN_MODE: "release"
-    command: "go run main.go"
+#    command: "go run main.go"

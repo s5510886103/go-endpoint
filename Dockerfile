@@ -1,5 +1,6 @@
 # Dockerfile
 FROM golang:1.18 as build
+#FROM golang:1.18-alpine as build
 
 WORKDIR /app
 
@@ -18,6 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v3 go build -a -installsuffix 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
+#FROM scratch
 COPY --from=build /build/app .
 COPY .env .
 EXPOSE 8080

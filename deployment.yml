@@ -5,7 +5,7 @@ metadata:
   labels:
     app: go-gin
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: go-gin
@@ -17,10 +17,10 @@ spec:
       containers:
         - name: go-gin
           image: hlkittipan/go-endpoint:v1.0.16
-          resources:
-            limits:
-              memory: "128Mi"
-              cpu: "500m"
+#          resources:
+#            limits:
+#              memory: "128Mi"
+#              cpu: "500m"
           ports:
             - containerPort: 5555
 ---
@@ -62,7 +62,7 @@ spec:
               memory: "128Mi"
               cpu: "100m"
           ports:
-            - containerPort: 27117
+            - containerPort: 27017
           env:
             - name: MONGO_INIT_DB_ROOT_USERNAME
               valueFrom:
@@ -84,8 +84,8 @@ spec:
     app: mongo
   ports:
     - protocol: TCP
-      port: 27117
-      targetPort: 27117
+      port: 27017
+      targetPort: 27017
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -170,7 +170,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "./../k8s/data"
+    path: "./k8s/data"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
