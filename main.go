@@ -65,7 +65,7 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-
+	r.Use(middleware.CORSMiddleware())
 	err := r.SetTrustedProxies(nil)
 	if err != nil {
 		return nil
