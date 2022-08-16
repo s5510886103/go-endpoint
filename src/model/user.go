@@ -22,3 +22,10 @@ type User struct {
 	UpdatedAt    time.Time          `json:"updated_at"`
 	UserId       string             `json:"user_id"`
 }
+
+type RegisterResponse struct {
+	Name      *string   `json:"name" validate:"required,min=2,max=200"`
+	Email     *string   `json:"email" validate:"email,required"`
+	Password  *string   `json:"password" validate:"required,min=6"`
+	CreatedAt time.Time `json:"created_at"`
+}

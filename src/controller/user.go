@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/bsonx"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -23,11 +25,11 @@ func CreateUser() gin.HandlerFunc {
 	var validate = validator.New()
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		var user model.User
+		var user model.RegisterResponse
 		defer cancel()
 
 		//validate the request body
-		if err := c.BindJSON(&user); err != nil {
+		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, model.UserResponse{Status: http.StatusBadRequest, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
 			return
 		}
@@ -40,6 +42,16 @@ func CreateUser() gin.HandlerFunc {
 
 		password := HashPassword(*user.Password)
 		user.Password = &password
+
+		//unique index here
+		_, err := userCollection.Indexes().CreateOne(context.Background(),
+			mongo.IndexModel{
+				Keys:    bsonx.Doc{{"email", bsonx.Int32(1)}},
+				Options: options.Index().SetUnique(true),
+			})
+		if err != nil {
+			log.Fatalf("something went wrong: %+v", err)
+		}
 
 		newUser := model.User{
 			Id:        primitive.NewObjectID(),
@@ -277,6 +289,7 @@ func Login() gin.HandlerFunc {
 		var foundUser model.User
 
 		if err := c.BindJSON(&user); err != nil {
+			defer cancel()
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -285,7 +298,7 @@ func Login() gin.HandlerFunc {
 		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
 		defer cancel()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or passowrd is incorrect"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or password is incorrect"})
 			return
 		}
 

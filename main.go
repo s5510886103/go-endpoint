@@ -94,16 +94,16 @@ func setupRouter() *gin.Engine {
 		v1.POST("/customer", controller.CreateCustomer())
 		v1.PUT("/customer/:id", controller.EditACustomer())
 		v1.DELETE("/customer/:id", controller.DeleteACustomer())
+		v1.GET("/customers", controller.GetAllCustomers())
 
 		v1.DELETE("/user/:userId", controller.DeleteAUser())
+		v1.GET("/users", controller.GetAllUsers())
+		v1.GET("/user/:userId", controller.GetAUser())  //add this
+		v1.PUT("/user/:userId", controller.EditAUser()) //add this
+
 	}
-	r.GET("/customers", controller.GetAllCustomers())
 
-	r.GET("/users", controller.GetAllUsers())
-	r.POST("/user", controller.CreateUser())       //add this
-	r.GET("/user/:userId", controller.GetAUser())  //add this
-	r.PUT("/user/:userId", controller.EditAUser()) //add this
-
+	r.POST("/user", controller.CreateUser()) //add this
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
 }
