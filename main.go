@@ -86,6 +86,7 @@ func setupRouter() *gin.Engine {
 	)
 
 	r.POST("/login", controller.Login())
+	r.POST("/register", controller.CreateUser()) //add this
 
 	v1 := r.Group("/v1")
 	v1.Use(middleware.Authentication())
@@ -103,7 +104,6 @@ func setupRouter() *gin.Engine {
 
 	}
 
-	r.POST("/user", controller.CreateUser()) //add this
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
 }

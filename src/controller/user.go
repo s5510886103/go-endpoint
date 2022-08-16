@@ -64,7 +64,14 @@ func CreateUser() gin.HandlerFunc {
 
 		result, err := userCollection.InsertOne(ctx, newUser)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.UserResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
+			var merr mongo.WriteException
+			merr = err.(mongo.WriteException)
+			errCode := merr.WriteErrors[0].Code
+			var msg = "something went wrong"
+			if errCode == 11000 {
+				msg = "Duplicate found"
+			}
+			c.JSON(http.StatusConflict, model.UserResponse{Status: http.StatusConflict, Message: "error", Data: map[string]interface{}{"data": msg}})
 			return
 		}
 
