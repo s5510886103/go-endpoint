@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -94,8 +95,45 @@ func GetAUser() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, model.UserResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": user}})
+		c.JSON(http.StatusOK, model.UserResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"user": user}})
 	}
+}
+
+func GetAUserByJwt() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientToken := c.Request.Header.Get("Authorization")
+		token := strings.TrimPrefix(clientToken, "Bearer ")
+
+		claims, err := helper.ValidateToken(token)
+		if err != "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.Abort()
+			return
+		}
+
+		user, err2 := findUser(claims.Email)
+		if err2 != nil {
+			c.JSON(http.StatusInternalServerError, model.UserResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err2.Error()}})
+			return
+		}
+		c.JSON(http.StatusOK, model.UserResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"user": user}})
+		fmt.Println(claims.Email)
+	}
+}
+
+func findUser(email string) (user model.User, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = userCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		// ErrNoDocuments means that the filter did not match any documents in the collection
+		if err == mongo.ErrNoDocuments {
+			return
+		}
+		log.Fatal(err)
+	}
+	return user, err
 }
 
 func EditAUser() gin.HandlerFunc {

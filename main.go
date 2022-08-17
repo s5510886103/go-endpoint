@@ -99,6 +99,7 @@ func setupRouter() *gin.Engine {
 
 		v1.DELETE("/user/:userId", controller.DeleteAUser())
 		v1.GET("/users", controller.GetAllUsers())
+		v1.POST("/user", controller.GetAUserByJwt())
 		v1.GET("/user/:userId", controller.GetAUser())  //add this
 		v1.PUT("/user/:userId", controller.EditAUser()) //add this
 
