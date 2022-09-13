@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "kubenext-c491"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "kubenext-c491"
+  template:
+    metadata:
+      labels:
+        app: "kubenext-c491"
+    spec:
+      containers:
+        - name: "kubenext-c491"
+          image: "goendpoint.azurecr.io/kubenext"
+          ports:
+          - containerPort: 80
