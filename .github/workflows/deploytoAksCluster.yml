@@ -13,7 +13,7 @@ jobs:
     - name: Create ACR
       id: create-acr
       run: |
-        az acr create -n GoEndpoint -g GoEndpoint8163-rg --location "Central India" --sku Standard --admin-enabled
+        az acr create -n go-endpoint -g go-endpoint8163-rg --location "Central India" --sku Standard --admin-enabled
         echo "::set-output name=acr_username::`az acr credential show -n GoEndpoint --query username | xargs`"
         echo "::set-output name=acr_password::`az acr credential show -n GoEndpoint --query passwords[0].value | xargs`"
         echo "::add-mask::`az acr credential show -n GoEndpoint --query passwords[0].value | xargs`"
